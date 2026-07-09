@@ -33,7 +33,7 @@ POSTGRES_PASSWORD=__DB_PASSWORD__
 POSTGRES_DB=ragdb
 LLM_PROVIDER=gemini
 GEMINI_API_KEY=__GEMINI_API_KEY__
-GEMINI_MODEL=gemini-2.0-flash
+GEMINI_MODEL=gemini-2.5-flash
 # Leave NEXT_PUBLIC_API_URL empty so the browser derives it from the host.
 NEXT_PUBLIC_API_URL=
 EOF
