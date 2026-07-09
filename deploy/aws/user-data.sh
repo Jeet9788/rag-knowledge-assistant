@@ -7,6 +7,16 @@ dnf update -y
 dnf install -y docker git
 systemctl enable --now docker
 
+# Add a 2 GB swap file so the embedding/reranker models run on a 1 GB
+# free-tier t3.micro without the OOM killer stopping containers.
+if [ ! -f /swapfile ]; then
+  dd if=/dev/zero of=/swapfile bs=1M count=2048
+  chmod 600 /swapfile
+  mkswap /swapfile
+  swapon /swapfile
+  echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
+
 # Docker Compose v2 plugin
 mkdir -p /usr/local/lib/docker/cli-plugins
 curl -SL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64" \

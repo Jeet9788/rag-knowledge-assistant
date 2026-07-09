@@ -1,10 +1,15 @@
 # Deploying to AWS
 
-This deploys the whole stack (frontend + backend + pgvector) onto a single small
+This deploys the whole stack (frontend + backend + pgvector) onto a single
 EC2 instance running `docker compose`. The LLM is served by the **free Google
-Gemini API**, so no GPU instance is required. Estimated cost: **~$15/month** for a
-`t3.small` (or free-tier eligible on `t3.micro` if your account qualifies, though
-2 GB RAM is recommended for the embedding model).
+Gemini API**, so no GPU instance is required.
+
+**Cost: free.** The default instance is a `t3.micro`, which is **AWS Free Tier
+eligible** (750 hours/month for the first 12 months on a new account) along with the
+30 GB storage and 100 GB data transfer the free tier includes. The deploy adds a 2 GB
+swap file so the embedding/reranker models run comfortably on the 1 GB of RAM. If you
+are past the 12-month free tier or want more headroom, pass `-InstanceType t3.small`
+(~$15/month).
 
 ## Architecture
 

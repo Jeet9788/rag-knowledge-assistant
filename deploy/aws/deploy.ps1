@@ -17,7 +17,9 @@ param(
   [Parameter(Mandatory = $true)][string]$RepoUrl,
   [Parameter(Mandatory = $true)][string]$GeminiApiKey,
   [string]$Region = "us-east-1",
-  [string]$InstanceType = "t3.small",
+  # t3.micro is AWS Free Tier eligible (750 hrs/month for 12 months).
+  # A 2 GB swap file (added via user-data) lets the ML models run on 1 GB RAM.
+  [string]$InstanceType = "t3.micro",
   [string]$Name = "rag-knowledge-assistant"
 )
 
