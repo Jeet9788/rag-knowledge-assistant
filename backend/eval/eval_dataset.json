@@ -1,0 +1,10 @@
+[
+  {
+    "question": "What is the main topic of the document?",
+    "ground_truth": "Replace with the expected answer grounded in your ingested docs."
+  },
+  {
+    "question": "Summarize the key conclusions.",
+    "ground_truth": "Replace with the expected summary grounded in your ingested docs."
+  }
+]

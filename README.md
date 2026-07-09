@@ -1,0 +1,152 @@
+# RAG Knowledge Assistant
+
+An end-to-end, production-style **Retrieval-Augmented Generation** application: upload
+your documents (PDF / TXT / Markdown) and chat with them. Answers are grounded in your
+files and include **inline numbered citations** back to the exact source passages.
+
+Built to demonstrate the full ML application lifecycle — ingestion, embeddings, a vector
+database, hybrid retrieval with reranking, LLM generation with streaming, a modern web
+UI, containerization, CI, an evaluation harness, and cloud deployment.
+
+## Features
+
+- **Document ingestion** for PDF, TXT, and Markdown with sentence-aware chunking.
+- **Local, free embeddings** via `fastembed` (BAAI/bge-small) — no API key needed.
+- **Vector search** with Postgres + `pgvector` (HNSW index).
+- **Hybrid retrieval**: dense vector search + keyword full-text search fused with
+  Reciprocal Rank Fusion, then a **cross-encoder reranker** for the final ordering.
+- **Provider-agnostic LLM layer**: swap between local **Ollama** (free), **Google Gemini**
+  (free tier), and **OpenAI** with a single env var.
+- **Token-by-token streaming** answers over Server-Sent Events.
+- **Citations**: every answer references the source document, page, and passage.
+- **Evaluation harness** using `ragas` (faithfulness, answer relevancy, context
+  precision/recall) so retrieval-quality improvements are measurable.
+- **Dockerized** with `docker compose`, **CI** via GitHub Actions, and **AWS deploy**
+  scripts.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  Upload["Upload PDF / TXT / MD"] --> Ingest["Parse + chunk + embed"]
+  Ingest --> DB[("Postgres + pgvector")]
+  User["User question"] --> API["FastAPI"]
+  API --> Retrieve["Hybrid retrieve (vector + keyword) + RRF + rerank"]
+  Retrieve --> DB
+  Retrieve --> LLM["LLM (Ollama / Gemini / OpenAI)"]
+  LLM --> Stream["Streamed answer + citations"]
+  Stream --> UI["Next.js chat UI"]
+```
+
+## Tech stack
+
+| Layer        | Technology                                                        |
+|--------------|-------------------------------------------------------------------|
+| Frontend     | Next.js 14 (App Router), React 18, TypeScript                     |
+| Backend      | FastAPI, Python 3.12, async streaming (SSE)                       |
+| Embeddings   | fastembed (ONNX, CPU) — BAAI/bge-small-en-v1.5                    |
+| Reranker     | fastembed cross-encoder (ms-marco-MiniLM)                         |
+| Vector store | PostgreSQL 16 + pgvector (HNSW)                                   |
+| LLM          | Ollama / Google Gemini / OpenAI (pluggable)                       |
+| Infra        | Docker, docker compose, GitHub Actions, AWS (EC2)                 |
+| Eval         | ragas                                                             |
+
+## Quickstart (local, 100% free)
+
+Requires Docker and (for the default local LLM) [Ollama](https://ollama.com).
+
+```bash
+# 1. Configure environment
+cp .env.example .env
+
+# 2. (Default LLM) pull a local model with Ollama
+ollama pull llama3.1
+
+# 3. Start everything
+docker compose up --build
+```
+
+Then open:
+- Frontend: http://localhost:3000
+- Backend docs: http://localhost:8000/docs
+
+Upload a document in the sidebar and start asking questions.
+
+> Prefer a hosted model? Set `LLM_PROVIDER=gemini` and `GEMINI_API_KEY=...` in `.env`
+> (free key at https://aistudio.google.com/apikey), then no local model is needed.
+
+## Configuration
+
+All settings are environment variables (see `.env.example`). Key ones:
+
+| Variable          | Default                     | Description                              |
+|-------------------|-----------------------------|------------------------------------------|
+| `LLM_PROVIDER`    | `ollama`                    | `ollama` \| `gemini` \| `openai`          |
+| `EMBEDDING_MODEL` | `BAAI/bge-small-en-v1.5`    | fastembed model (must match `EMBEDDING_DIM`) |
+| `USE_RERANKER`    | `true`                      | Toggle the cross-encoder reranker        |
+| `RETRIEVE_TOP_K`  | `20`                        | Candidates fetched before reranking      |
+| `FINAL_TOP_K`     | `5`                         | Passages sent to the LLM                 |
+| `CHUNK_SIZE`      | `800`                       | Target chunk size (characters)           |
+
+## API
+
+| Method | Path                | Description                              |
+|--------|---------------------|------------------------------------------|
+| GET    | `/health`           | Service + provider status                |
+| POST   | `/documents`        | Upload & ingest a file (multipart)       |
+| GET    | `/documents`        | List indexed documents                   |
+| DELETE | `/documents/{id}`   | Delete a document and its chunks         |
+| POST   | `/chat`             | Ask a question (streams SSE)             |
+
+## Evaluation
+
+Measure RAG quality with a labeled dataset (edit `backend/eval/eval_dataset.json`):
+
+```bash
+pip install -r backend/eval/requirements.txt
+export OPENAI_API_KEY=...   # ragas needs a judge LLM
+python backend/eval/ragas_eval.py --api http://localhost:8000 --collection default
+```
+
+This reports faithfulness, answer relevancy, and context precision/recall — run it
+with the reranker on vs. off to demonstrate a measurable retrieval improvement.
+
+## Tests
+
+```bash
+cd backend
+pip install -r requirements.txt pytest
+pytest
+```
+
+## Deployment
+
+See [`deploy/aws/README.md`](deploy/aws/README.md) for one-command deployment to a
+single small EC2 instance (~$15/month) using the free Gemini API.
+
+## Project structure
+
+```
+rag-knowledge-assistant/
+├── backend/            FastAPI service
+│   ├── app/
+│   │   ├── main.py         API endpoints (upload, list, chat/SSE)
+│   │   ├── ingestion.py    parse -> chunk -> embed -> store
+│   │   ├── chunking.py     fixed & sentence-aware chunkers
+│   │   ├── embeddings.py   fastembed embeddings + reranker
+│   │   ├── retrieval.py    hybrid search + RRF + rerank
+│   │   ├── rag.py          prompt building + streaming + citations
+│   │   ├── llm/            pluggable providers (ollama/gemini/openai)
+│   │   ├── db.py           pgvector schema + connection pool
+│   │   └── config.py       env-based settings
+│   ├── tests/          unit tests (chunking, RRF)
+│   └── eval/           ragas evaluation harness
+├── frontend/           Next.js chat UI (streaming + citations)
+├── deploy/aws/         EC2 deploy + teardown scripts
+├── .github/workflows/  CI (lint, tests, docker build)
+└── docker-compose.yml  full local stack
+```
+
+## License
+
+MIT
