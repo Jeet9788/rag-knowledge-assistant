@@ -37,7 +37,9 @@ app = FastAPI(title="RAG Knowledge Assistant", version="1.0.0", lifespan=lifespa
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
-    allow_credentials=True,
+    # Wildcard origins cannot be combined with credentials per the CORS spec, and
+    # this app uses no cookies/auth, so disable credentials when allowing all origins.
+    allow_credentials="*" not in settings.cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )

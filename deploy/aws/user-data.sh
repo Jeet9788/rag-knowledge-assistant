@@ -40,6 +40,9 @@ POSTGRES_DB=ragdb
 LLM_PROVIDER=gemini
 GEMINI_API_KEY=__GEMINI_API_KEY__
 GEMINI_MODEL=gemini-2.5-flash
+# Allow the browser (served from this instance's public IP) to call the API.
+# The app has no auth/cookies, so a wildcard origin is safe here.
+BACKEND_CORS_ORIGINS=*
 # Leave NEXT_PUBLIC_API_URL empty so the browser derives it from the host.
 NEXT_PUBLIC_API_URL=
 EOF
