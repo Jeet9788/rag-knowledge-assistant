@@ -1,5 +1,13 @@
 # RAG Knowledge Assistant
 
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-14-000000?logo=nextdotjs&logoColor=white)
+![Postgres + pgvector](https://img.shields.io/badge/Postgres-pgvector-4169E1?logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-compose-2496ED?logo=docker&logoColor=white)
+![CI](https://github.com/Jeet9788/rag-knowledge-assistant/actions/workflows/ci.yml/badge.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+
 An end-to-end, production-style **Retrieval-Augmented Generation** application: upload
 your documents (PDF / TXT / Markdown) and chat with them. Answers are grounded in your
 files and include **inline numbered citations** back to the exact source passages.
@@ -7,6 +15,30 @@ files and include **inline numbered citations** back to the exact source passage
 Built to demonstrate the full ML application lifecycle — ingestion, embeddings, a vector
 database, hybrid retrieval with reranking, LLM generation with streaming, a modern web
 UI, containerization, CI, an evaluation harness, and cloud deployment.
+
+## Demo
+
+> Ask a question, get a streamed answer grounded in your documents with numbered
+> citations back to the exact source passage.
+
+![Chat with cited answer](docs/demo.png)
+
+![Home screen with uploaded document](docs/home.png)
+
+## Engineering highlights
+
+- **Retrieval quality, not just a vector lookup:** combines dense (pgvector) and
+  keyword (Postgres full-text) search, fuses them with Reciprocal Rank Fusion, then
+  reorders with a cross-encoder reranker — a measurable step up from naive similarity search.
+- **Grounded and trustworthy:** every answer streams with inline `[n]` citations tied to
+  the exact source passage, and the model is instructed to refuse when the context is insufficient.
+- **Provider-agnostic by design:** a thin LLM abstraction lets you switch between local
+  Ollama, Google Gemini, and OpenAI with one environment variable — zero code changes.
+- **Cost-aware:** embeddings and reranking run locally for free (fastembed/ONNX, CPU); the
+  cloud deployment uses a free LLM tier and fits inside the AWS Free Tier.
+- **Measured, not guessed:** a `ragas` harness quantifies faithfulness and context
+  precision/recall so retrieval changes can be evaluated objectively.
+- **Ship-ready:** Dockerized, CI on every push, and one-command deploy/teardown for AWS.
 
 ## Features
 
