@@ -54,20 +54,26 @@ foreach ($port in 22, 3000, 8000) {
 }
 Write-Host "==> Security group: $sgId"
 
-# 4. Render user-data with secrets
+# 4. Render user-data with secrets. Write to a temp file with LF line endings and
+#    pass via file:// so the AWS CLI performs the base64-encoding itself (passing an
+#    already-base64 string would double-encode it). LF endings are required because
+#    the script runs under bash on Linux (CRLF would inject stray \r characters).
 $dbPassword = [System.Guid]::NewGuid().ToString("N")
 $userData = Get-Content (Join-Path $PSScriptRoot "user-data.sh") -Raw
 $userData = $userData.Replace("__REPO_URL__", $RepoUrl)
 $userData = $userData.Replace("__GEMINI_API_KEY__", $GeminiApiKey)
 $userData = $userData.Replace("__DB_PASSWORD__", $dbPassword)
-$userDataB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($userData))
+$userData = $userData -replace "`r`n", "`n"
+$renderedPath = Join-Path $env:TEMP "rag-user-data.sh"
+[System.IO.File]::WriteAllText($renderedPath, $userData, (New-Object System.Text.UTF8Encoding($false)))
+$userDataArg = "file://" + ($renderedPath -replace '\\', '/')
 
 # 5. Launch instance
 $instanceId = aws ec2 run-instances --region $Region `
   --image-id $ami --instance-type $InstanceType --key-name $Name `
   --security-group-ids $sgId `
   --block-device-mappings "DeviceName=/dev/xvda,Ebs={VolumeSize=20,VolumeType=gp3}" `
-  --user-data $userDataB64 `
+  --user-data $userDataArg `
   --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$Name}]" `
   --query "Instances[0].InstanceId" --output text
 Write-Host "==> Launched instance: $instanceId"
@@ -78,8 +84,8 @@ $ip = aws ec2 describe-instances --region $Region --instance-ids $instanceId `
 
 Write-Host ""
 Write-Host "==> Instance is booting and building the app (first boot takes ~5-8 min)." -ForegroundColor Green
-Write-Host "    Frontend:  http://$ip:3000"
-Write-Host "    Backend:   http://$ip:8000/health"
+Write-Host "    Frontend:  http://${ip}:3000"
+Write-Host "    Backend:   http://${ip}:8000/health"
 Write-Host "    SSH:       ssh -i `"$keyPath`" ec2-user@$ip"
 Write-Host ""
 Write-Host "To tear everything down and stop charges, run:" -ForegroundColor Yellow

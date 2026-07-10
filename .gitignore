@@ -43,3 +43,7 @@ Thumbs.db
 *.tfstate
 *.tfstate.*
 terraform.tfvars
+
+# Secrets / keys (never commit)
+*.pem
+*.key

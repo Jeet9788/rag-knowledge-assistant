@@ -23,6 +23,12 @@ curl -SL "https://github.com/docker/compose/releases/latest/download/docker-comp
   -o /usr/local/lib/docker/cli-plugins/docker-compose
 chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
+# Buildx plugin (Amazon Linux's docker package does not include a recent buildx,
+# and `docker compose --build` requires buildx >= 0.17).
+curl -SL "https://github.com/docker/buildx/releases/download/v0.19.3/buildx-v0.19.3.linux-amd64" \
+  -o /usr/local/lib/docker/cli-plugins/docker-buildx
+chmod +x /usr/local/lib/docker/cli-plugins/docker-buildx
+
 cd /opt
 git clone "__REPO_URL__" app
 cd app
