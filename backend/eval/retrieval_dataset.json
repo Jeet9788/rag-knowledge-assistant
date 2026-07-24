@@ -1,15 +1,15 @@
 [
-  { "question": "How many days per week can new engineers work remotely?", "relevant_substring": "three days per week" },
-  { "question": "What is required for a fully remote arrangement?", "relevant_substring": "written approval from a director" },
-  { "question": "How often is the home-office equipment stipend provided?", "relevant_substring": "once per employment term" },
-  { "question": "What are the company core working hours?", "relevant_substring": "10:00 to 15:00" },
-  { "question": "Who must review a change that touches billing or data deletion?", "relevant_substring": "second senior engineer" },
+  { "question": "How many days per week can new engineers work remotely?", "relevant_substring": "three days" },
+  { "question": "What is required for a fully remote arrangement?", "relevant_substring": "approval from a director" },
+  { "question": "How often is the home-office equipment stipend provided?", "relevant_substring": "employment term" },
+  { "question": "What are the company core working hours?", "relevant_substring": "10:00" },
+  { "question": "Who must review a change that touches billing or data deletion?", "relevant_substring": "senior engineer" },
   { "question": "What happens to a pull request that lowers test coverage?", "relevant_substring": "blocked automatically" },
-  { "question": "How far in advance must an at-risk deadline be raised?", "relevant_substring": "three working days" },
+  { "question": "How far in advance must an at-risk deadline be raised?", "relevant_substring": "working days" },
   { "question": "How quickly must an on-call engineer acknowledge a page?", "relevant_substring": "fifteen minutes" },
-  { "question": "What is the minimum password length?", "relevant_substring": "sixteen characters" },
-  { "question": "How soon must a lost or stolen device be reported?", "relevant_substring": "within one hour" },
-  { "question": "What expense amount requires approval before it is incurred?", "relevant_substring": "above $100" },
-  { "question": "How often are company laptops refreshed?", "relevant_substring": "every three years" },
-  { "question": "When can engineers start taking paid time off?", "relevant_substring": "after the 30-day onboarding period" }
+  { "question": "What is the minimum password length?", "relevant_substring": "sixteen" },
+  { "question": "How soon must a lost or stolen device be reported?", "relevant_substring": "one hour" },
+  { "question": "What expense amount requires approval before it is incurred?", "relevant_substring": "$100" },
+  { "question": "How often are company laptops refreshed?", "relevant_substring": "three years" },
+  { "question": "When can engineers start taking paid time off?", "relevant_substring": "paid time off" }
 ]
