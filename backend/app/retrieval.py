@@ -47,13 +47,29 @@ def _vector_search(collection: str, query_vec, limit: int) -> list[str]:
 
 
 def _keyword_search(collection: str, query: str, limit: int) -> list[str]:
+    # plainto_tsquery ANDs every term, so a natural-language question — which
+    # carries words that never appear in the source ("how", "soon", "must") —
+    # matches nothing, silently degrading hybrid search to vector-only. Rewrite
+    # the query to OR semantics ('lost' | 'stolen' | 'device' | ...) so any
+    # matching term contributes and ts_rank orders by how well each chunk
+    # matches. NULLIF guards the all-stopword case, where the query is empty.
     pool = get_pool()
     with pool.connection() as conn:
         rows = conn.execute(
-            "SELECT id FROM chunks "
-            "WHERE collection = %s AND tsv @@ plainto_tsquery('english', %s) "
-            "ORDER BY ts_rank(tsv, plainto_tsquery('english', %s)) DESC LIMIT %s",
-            (collection, query, query, limit),
+            """
+            WITH q AS (
+                SELECT to_tsquery(
+                    'english',
+                    NULLIF(replace(plainto_tsquery('english', %s)::text, '&', '|'), '')
+                ) AS ts
+            )
+            SELECT c.id
+            FROM chunks c, q
+            WHERE c.collection = %s AND q.ts IS NOT NULL AND c.tsv @@ q.ts
+            ORDER BY ts_rank(c.tsv, q.ts) DESC
+            LIMIT %s
+            """,
+            (query, collection, limit),
         ).fetchall()
     return [str(r[0]) for r in rows]
 
