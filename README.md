@@ -16,14 +16,22 @@ Built to demonstrate the full ML application lifecycle — ingestion, embeddings
 database, hybrid retrieval with reranking, LLM generation with streaming, a modern web
 UI, containerization, CI, an evaluation harness, and cloud deployment.
 
+## Live demo
+
+**→ [3.219.155.208:3000](http://3.219.155.208:3000)** — running on a single AWS EC2
+instance, answers served by the free Gemini tier.
+
+A sample document is already indexed, so you can ask a question straight away. Upload
+your own from the card catalog on the left.
+
 ## Demo
 
 > Ask a question, get a streamed answer grounded in your documents with numbered
 > citations back to the exact source passage.
 
-![Chat with cited answer](docs/demo.png)
+![The landing page](docs/demo.png)
 
-![Home screen with uploaded document](docs/home.png)
+![A cited answer with its source passages](docs/home.png)
 
 ## Engineering highlights
 
@@ -74,7 +82,7 @@ flowchart LR
 
 | Layer        | Technology                                                        |
 |--------------|-------------------------------------------------------------------|
-| Frontend     | Next.js 14 (App Router), React 18, TypeScript                     |
+| Frontend     | Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS 4     |
 | Backend      | FastAPI, Python 3.12, async streaming (SSE)                       |
 | Embeddings   | fastembed (ONNX, CPU) — BAAI/bge-small-en-v1.5                    |
 | Reranker     | fastembed cross-encoder (ms-marco-MiniLM)                         |
@@ -154,7 +162,9 @@ pytest
 ## Deployment
 
 See [`deploy/aws/README.md`](deploy/aws/README.md) for one-command deployment to a
-single small EC2 instance (~$15/month) using the free Gemini API.
+single EC2 instance using the free Gemini API. The default is a `t3.micro` with a 2 GB
+swap file so the ONNX embedding and reranker models fit in 1 GB of RAM — Free Tier
+eligible, so the running cost is the public IPv4 charge alone.
 
 ## Project structure
 
@@ -173,7 +183,10 @@ rag-knowledge-assistant/
 │   │   └── config.py       env-based settings
 │   ├── tests/          unit tests (chunking, RRF)
 │   └── eval/           ragas evaluation harness
-├── frontend/           Next.js chat UI (streaming + citations)
+├── frontend/           Next.js UI
+│   ├── app/page.tsx        landing page
+│   ├── app/assistant/      the assistant (streaming + citations)
+│   └── components/         design system pieces (light + dark)
 ├── deploy/aws/         EC2 deploy + teardown scripts
 ├── .github/workflows/  CI (lint, tests, docker build)
 └── docker-compose.yml  full local stack

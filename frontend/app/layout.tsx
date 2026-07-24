@@ -25,7 +25,7 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "The Knowledge Assistant · Ask your documents, get cited answers",
+  title: "RAG Knowledge Assistant · Ask your documents, get cited answers",
   description:
     "Upload your documents and ask questions in plain language. Every answer is grounded in what you uploaded and footnoted back to the exact page it came from.",
 };

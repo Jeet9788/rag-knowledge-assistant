@@ -20,7 +20,7 @@ export function Masthead({
           <div className="label">{strapline}</div>
           <Link href="/" className="mt-1.5 block">
             <h1 className="font-display text-[clamp(28px,5vw,42px)] leading-none font-black tracking-[-0.02em]">
-              The Knowledge<span className="text-accent"> Assistant</span>
+              <span className="text-accent">RAG</span> Knowledge Assistant
             </h1>
           </Link>
         </div>
