@@ -50,12 +50,38 @@ services:
     build: ./frontend
     depends_on:
       - backend
-    environment:
-      # Browser talks to backend on localhost; server-side calls use the service name.
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     ports:
       - "3000:3000"
+
+  # Single-origin reverse proxy — the canonical entry point. Serves the UI at /
+  # and the API at /api on one address, so the whole app fits behind one HTTPS
+  # certificate or tunnel. Reach the app at http://<host> (port 80), not :3000.
+  proxy:
+    image: caddy:2-alpine
+    depends_on:
+      - frontend
+      - backend
+    ports:
+      - "80:80"
+    volumes:
+      - ./deploy/proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    restart: unless-stopped
+
+  # Free HTTPS in front of the proxy via a Cloudflare quick tunnel. Opt-in:
+  #   docker compose --profile tunnel up -d cloudflared
+  # The public https://<random>.trycloudflare.com URL is printed in its logs and
+  # changes whenever this container restarts (that is the trade-off for needing
+  # no domain and no account). Swap in a named tunnel + domain for a stable URL.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    profiles: ["tunnel"]
+    command: tunnel --no-autoupdate --url http://proxy:80
+    depends_on:
+      - proxy
+    restart: unless-stopped
 
 volumes:
   pgdata:
   hf_cache:
+  caddy_data:

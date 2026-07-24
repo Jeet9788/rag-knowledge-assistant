@@ -1,10 +1,16 @@
 function resolveApiUrl(): string {
   // Explicit override wins (baked at build time).
   if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
-  // In the browser, talk to the backend on the same host, port 8000.
-  // This lets the same build run locally and on a deployed server.
+
   if (typeof window !== "undefined") {
-    return `${window.location.protocol}//${window.location.hostname}:8000`;
+    const { protocol, hostname, port, origin } = window.location;
+    // Legacy/dev entry point: the frontend is hit directly on :3000, so the
+    // backend is a sibling on :8000 of the same host (cross-origin, HTTP).
+    if (port === "3000") return `${protocol}//${hostname}:8000`;
+    // Reverse-proxied entry point (ports 80/443, incl. the HTTPS tunnel): the
+    // proxy serves the API same-origin under /api, so there is no cross-origin
+    // call and no HTTP-from-HTTPS mixed-content block.
+    return `${origin}/api`;
   }
   return "http://localhost:8000";
 }
