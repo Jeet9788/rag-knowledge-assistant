@@ -18,11 +18,21 @@ UI, containerization, CI, an evaluation harness, and cloud deployment.
 
 ## Live demo
 
-**→ [3.219.155.208:3000](http://3.219.155.208:3000)** — running on a single AWS EC2
-instance, answers served by the free Gemini tier.
+**→ [3.219.155.208](http://3.219.155.208)** — running on a single AWS EC2 instance,
+answers served by the free Gemini tier.
 
 A sample document is already indexed, so you can ask a question straight away. Upload
 your own from the card catalog on the left.
+
+The whole app is served through a small reverse proxy (`deploy/proxy/Caddyfile`): the
+UI at `/` and the API at `/api` on one origin, so it fits behind a single TLS
+certificate. For HTTPS without a domain, an opt-in Cloudflare tunnel puts a
+`https://…trycloudflare.com` address in front of it:
+
+```bash
+docker compose --profile tunnel up -d cloudflared
+docker compose logs cloudflared   # prints the public HTTPS URL
+```
 
 ## Demo
 
