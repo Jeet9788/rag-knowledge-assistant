@@ -1,214 +1,181 @@
-"use client";
+import Link from "next/link";
+import { Masthead } from "@/components/masthead";
+import { withCitations } from "@/components/cite";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  DocumentInfo,
-  Source,
-  deleteDocument,
-  listDocuments,
-  streamChat,
-  uploadDocument,
-} from "@/lib/api";
+const SPECIMEN = {
+  question: "What is the remote work policy for new engineers?",
+  answer:
+    "New engineers may work remotely up to three days per week after completing " +
+    "the 30-day onboarding period[1]. Fully remote arrangements require director " +
+    "approval and a documented four-hour overlap with the team's core hours[2].",
+  sources: [
+    { marker: 1, filename: "employee-handbook.pdf", page: 14, score: 0.91 },
+    { marker: 2, filename: "security-policy.md", page: 3, score: 0.84 },
+  ],
+};
 
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-  sources?: Source[];
-}
+const STEPS = [
+  {
+    n: "I",
+    title: "File",
+    body: "Drop in a PDF, text, or Markdown file. It is split into overlapping passages, embedded with BGE, and stored in Postgres with pgvector.",
+  },
+  {
+    n: "II",
+    title: "Retrieve",
+    body: "Your question is embedded and matched against every passage. Dense and keyword results are fused with reciprocal rank fusion, then reranked.",
+  },
+  {
+    n: "III",
+    title: "Cite",
+    body: "Only the winning passages are given to the model, which must footnote each claim. Every number opens onto the page it came from.",
+  },
+];
 
-const COLLECTION = "default";
+const COLOPHON = [
+  ["Retrieval", "pgvector · hybrid search · RRF · cross-encoder rerank"],
+  ["Embeddings", "BAAI/bge-small-en-v1.5 via fastembed (ONNX)"],
+  ["Backend", "FastAPI · psycopg 3 · server-sent events"],
+  ["Model", "Pluggable — Gemini, OpenAI, or local Ollama"],
+  ["Frontend", "Next.js · TypeScript · Tailwind"],
+  ["Infrastructure", "Docker Compose on EC2, scripted end to end"],
+];
 
-export default function Home() {
-  const [docs, setDocs] = useState<DocumentInfo[]>([]);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-
-  const refreshDocs = useCallback(async () => {
-    try {
-      setDocs(await listDocuments());
-    } catch {
-      /* backend may still be starting */
-    }
-  }, []);
-
-  useEffect(() => {
-    refreshDocs();
-  }, [refreshDocs]);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    setError(null);
-    try {
-      await uploadDocument(file, COLLECTION);
-      await refreshDocs();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
-    } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
-    }
-  }
-
-  async function handleDelete(id: string) {
-    await deleteDocument(id);
-    await refreshDocs();
-  }
-
-  async function handleSend() {
-    const question = input.trim();
-    if (!question || busy) return;
-    setInput("");
-    setError(null);
-    setBusy(true);
-
-    setMessages((m) => [
-      ...m,
-      { role: "user", content: question },
-      { role: "assistant", content: "", sources: [] },
-    ]);
-
-    const update = (fn: (msg: Message) => Message) =>
-      setMessages((m) => {
-        const copy = [...m];
-        copy[copy.length - 1] = fn(copy[copy.length - 1]);
-        return copy;
-      });
-
-    try {
-      await streamChat(question, COLLECTION, (event) => {
-        if (event.type === "sources") {
-          update((msg) => ({ ...msg, sources: event.sources }));
-        } else if (event.type === "token") {
-          update((msg) => ({ ...msg, content: msg.content + event.text }));
-        } else if (event.type === "error") {
-          setError(event.message);
-        }
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
-      setBusy(false);
-    }
-  }
-
+export default function LandingPage() {
   return (
-    <div className="app">
-      <aside className="sidebar">
-        <div className="brand">
-          <span>RAG</span> Knowledge Assistant
-        </div>
-        <div className="subtle">Chat with your documents, with citations.</div>
+    <div className="mx-auto max-w-[1180px] px-6 py-8 sm:px-8">
+      <Masthead strapline="No. 001 · Retrieval-augmented generation" />
 
-        <div className="upload-box">
-          <p className="subtle" style={{ marginTop: 0 }}>
-            Upload PDF, TXT, or Markdown
+      {/* ── Hero ────────────────────────────────────────────────── */}
+      <section className="grid gap-12 py-14 lg:grid-cols-[1.1fr_1fr] lg:py-20">
+        <div>
+          <h2 className="font-display text-[clamp(38px,7vw,68px)] leading-[0.94] font-black tracking-[-0.035em]">
+            Ask your
+            <br />
+            documents.
+            <br />
+            <span className="text-accent">Check the answer.</span>
+          </h2>
+          <p className="mt-8 max-w-[46ch] text-[17px] leading-[1.7] text-muted">
+            Most assistants answer from memory and leave you to trust them. This
+            one answers only from the documents you file, and footnotes every
+            claim back to the exact page — so you can go and look.
           </p>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".pdf,.txt,.md,.markdown"
-            style={{ display: "none" }}
-            onChange={handleUpload}
-          />
-          <button
-            className="btn"
-            disabled={uploading}
-            onClick={() => fileRef.current?.click()}
-          >
-            {uploading ? "Indexing..." : "Upload document"}
-          </button>
+          <div className="mt-9 flex flex-wrap items-center gap-6">
+            <Link
+              href="/app"
+              className="label px-7 py-3.5 transition-opacity hover:opacity-90"
+              style={{
+                backgroundColor: "var(--accent)",
+                color: "var(--accent-ink)",
+              }}
+            >
+              Open the reading room
+            </Link>
+            <a
+              href="https://github.com/Jeet9788/rag-knowledge-assistant"
+              target="_blank"
+              rel="noreferrer"
+              className="label inline-flex items-center gap-3 transition-colors hover:text-accent"
+            >
+              Read the source
+              <span className="h-px w-10 bg-current" />
+            </a>
+          </div>
         </div>
 
-        <div className="doc-list">
-          {docs.length === 0 && (
-            <div className="subtle">No documents indexed yet.</div>
-          )}
-          {docs.map((d) => (
-            <div className="doc" key={d.id}>
-              <div className="doc-name" title={d.filename}>
-                {d.filename}
-                <div className="subtle">{d.num_chunks} chunks</div>
-              </div>
-              <button className="icon-btn" onClick={() => handleDelete(d.id)}>
-                ✕
-              </button>
+        {/* Specimen: the product's real output, used as the hero image */}
+        <div className="flex items-center">
+          <div className="card-stock w-full p-6">
+            <div className="flex items-baseline gap-3 border-b border-dashed border-rule pb-3">
+              <span className="label">Specimen finding</span>
+              <span className="leader" />
+              <span className="label">2 authorities</span>
             </div>
-          ))}
-        </div>
-      </aside>
 
-      <main className="main">
-        <div className="messages">
-          {messages.length === 0 && (
-            <div className="empty-state">
-              <h2>Ask a question about your documents</h2>
-              <p>
-                Upload a file on the left, then ask anything. Answers are grounded
-                in your documents and include numbered citations.
-              </p>
-            </div>
-          )}
+            <h3 className="mt-5 font-display text-[19px] leading-snug font-bold">
+              {SPECIMEN.question}
+            </h3>
 
-          {messages.map((m, i) => (
-            <div className={`msg ${m.role}`} key={i}>
-              <div className="role">{m.role}</div>
-              <div
-                className={`bubble ${
-                  m.role === "assistant" && busy && i === messages.length - 1
-                    ? "blink"
-                    : ""
-                }`}
-              >
-                {m.content}
-              </div>
-              {m.sources && m.sources.length > 0 && (
-                <div className="citations">
-                  {m.sources.map((s) => (
-                    <div className="citation" key={s.chunk_id}>
-                      <b>
-                        [{s.marker}] {s.filename}
-                        {s.page != null ? `, p.${s.page}` : ""}
-                      </b>{" "}
-                      &middot; score {s.score}
-                      <div>{s.snippet}</div>
-                    </div>
-                  ))}
+            <p className="mt-4 text-[14.5px] leading-[1.7]">
+              {withCitations(SPECIMEN.answer)}
+            </p>
+
+            <div className="mt-5 border-t border-dashed border-rule pt-3.5">
+              {SPECIMEN.sources.map((s) => (
+                <div
+                  key={s.marker}
+                  className="flex items-baseline gap-2.5 py-1 font-mono text-[10.5px] text-muted"
+                >
+                  <span className="font-bold text-accent">[{s.marker}]</span>
+                  <span className="truncate">{s.filename}</span>
+                  <span className="leader" />
+                  <span>
+                    p.{s.page} · {s.score.toFixed(2)}
+                  </span>
                 </div>
-              )}
+              ))}
             </div>
-          ))}
-          {error && <div className="error">{error}</div>}
-          <div ref={bottomRef} />
+          </div>
+        </div>
+      </section>
+
+      {/* ── How it works ────────────────────────────────────────── */}
+      <section className="border-t-2 border-[var(--rule-strong)] pt-8">
+        <div className="flex items-baseline gap-3">
+          <span className="label">How it works</span>
+          <span className="leader" />
         </div>
 
-        <div className="composer">
-          <textarea
-            value={input}
-            placeholder="Ask a question..."
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-          />
-          <button className="btn" disabled={busy || !input.trim()} onClick={handleSend}>
-            {busy ? "..." : "Send"}
-          </button>
+        <div className="mt-6 grid gap-5 md:grid-cols-3">
+          {STEPS.map((step) => (
+            <article key={step.n} className="card-stock p-5">
+              <div className="flex items-baseline justify-between border-b border-dashed border-rule pb-2.5">
+                <span className="font-display text-[26px] leading-none font-black text-accent">
+                  {step.n}
+                </span>
+                <span className="label">Step</span>
+              </div>
+              <h3 className="mt-3.5 font-display text-[20px] font-bold">
+                {step.title}
+              </h3>
+              <p className="mt-2 text-[14px] leading-relaxed text-muted">
+                {step.body}
+              </p>
+            </article>
+          ))}
         </div>
-      </main>
+      </section>
+
+      {/* ── Colophon ────────────────────────────────────────────── */}
+      <section className="mt-16 border-t-2 border-[var(--rule-strong)] pt-8">
+        <div className="flex items-baseline gap-3">
+          <span className="label">Colophon</span>
+          <span className="leader" />
+        </div>
+
+        <dl className="mt-5 grid gap-x-10 gap-y-0 md:grid-cols-2">
+          {COLOPHON.map(([term, detail]) => (
+            <div
+              key={term}
+              className="flex items-baseline gap-3 border-b border-dashed border-rule py-2.5"
+            >
+              <dt className="label shrink-0">{term}</dt>
+              <span className="leader" />
+              <dd className="text-right font-mono text-[11px] text-muted">
+                {detail}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      <footer className="mt-14 flex flex-wrap items-baseline justify-between gap-4 border-t-2 border-[var(--rule-strong)] pt-5 pb-10">
+        <span className="label">Built by Jeet Patel</span>
+        <Link href="/app" className="label transition-colors hover:text-accent">
+          Open the reading room →
+        </Link>
+      </footer>
     </div>
   );
 }
