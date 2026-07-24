@@ -94,7 +94,7 @@ export function Finding({ exchange }: { exchange: Exchange }) {
                   </span>
                   <span className="font-mono text-[10px] text-muted">
                     {source.page != null && `p. ${source.page} · `}
-                    similarity {source.score.toFixed(2)}
+                    relevance {source.score.toFixed(2)}
                   </span>
                 </div>
                 <p className="mt-1 text-[13.5px] leading-relaxed text-muted italic">

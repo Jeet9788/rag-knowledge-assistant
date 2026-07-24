@@ -3,6 +3,7 @@ then an optional cross-encoder reranker for the final ordering."""
 from __future__ import annotations
 
 import logging
+import math
 from dataclasses import dataclass
 
 from .config import settings
@@ -12,6 +13,15 @@ from .embeddings import embed_query, rerank
 logger = logging.getLogger(__name__)
 
 RRF_K = 60  # standard reciprocal-rank-fusion constant
+
+
+def _sigmoid(x: float) -> float:
+    """Map a cross-encoder logit onto 0-1. Guarded against overflow, which
+    math.exp raises on for logits beyond about -745."""
+    if x >= 0:
+        return 1.0 / (1.0 + math.exp(-x))
+    e = math.exp(x)
+    return e / (1.0 + e)
 
 
 @dataclass
@@ -101,10 +111,22 @@ def retrieve(query: str, collection: str = "default", top_k: int | None = None) 
     if settings.use_reranker and candidates:
         scores = rerank(query, [c.content for c in candidates])
         for chunk, score in zip(candidates, scores):
-            chunk.score = float(score)
+            # The cross-encoder emits an unbounded logit (commonly negative),
+            # which is fine for ordering but meaningless to show a reader. These
+            # ms-marco models are trained with binary cross-entropy, so the
+            # sigmoid of that logit is a calibrated relevance probability.
+            # Squashing here keeps `score` on a single 0-1 scale for every
+            # caller, whichever branch produced it.
+            chunk.score = _sigmoid(float(score))
         candidates.sort(key=lambda c: c.score, reverse=True)
     else:
+        # RRF sums 1/(k+rank), so the raw fused value is tiny (~0.03 at best)
+        # and depends on how many rankings were fused. Normalising against the
+        # best candidate keeps the reported scale comparable to the reranked
+        # branch instead of always reading as "almost zero relevance".
+        best = max(fused.values())
         for chunk in candidates:
-            chunk.score = fused.get(chunk.chunk_id, 0.0)
+            raw = fused.get(chunk.chunk_id, 0.0)
+            chunk.score = raw / best if best else 0.0
 
     return candidates[:final_k]
