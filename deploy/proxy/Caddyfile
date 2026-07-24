@@ -1,14 +1,14 @@
-# Single-origin reverse proxy so the whole app is reachable over one address
-# (and therefore over one HTTPS certificate / tunnel). Without this the UI and
-# the API sit on different ports, and an HTTPS page cannot call an HTTP API.
+# Single-origin reverse proxy. Serves the UI at / and the API at /api on one
+# host, so the whole app sits behind one automatically-provisioned certificate.
 #
 #   /api/*  ->  backend  (the /api prefix is stripped before forwarding)
 #   /*      ->  frontend
 #
-# Listens on plain :80. TLS is terminated in front of this — by the Cloudflare
-# tunnel today, or by swapping this address for a real domain (at which point
-# Caddy would fetch a Let's Encrypt certificate itself).
-:80 {
+# Naming a real domain here switches Caddy into automatic HTTPS: on first run it
+# obtains and renews a Let's Encrypt certificate (needs ports 80 + 443 open and
+# the domain pointed at this host) and redirects http -> https for free.
+
+(app) {
 	# handle_path strips the matched prefix, so /api/chat -> /chat upstream.
 	handle_path /api/* {
 		reverse_proxy backend:8000
@@ -17,8 +17,8 @@
 	handle {
 		reverse_proxy frontend:3000
 	}
+}
 
-	# Server-Sent Events must not be buffered, or the streamed answer would
-	# arrive all at once instead of token by token.
-	encode gzip
+ragassistant.duckdns.org {
+	import app
 }

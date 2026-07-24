@@ -63,6 +63,7 @@ services:
       - backend
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./deploy/proxy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
