@@ -26,12 +26,18 @@ your own from the card catalog on the left.
 
 ## Demo
 
-> Ask a question, get a streamed answer grounded in your documents with numbered
-> citations back to the exact source passage.
+![The landing page](docs/landing.jpg)
 
-![The landing page](docs/demo.png)
+Ask a question and the answer streams back with numbered footnotes. Each one names the
+document, the page, and the relevance the reranker assigned to that passage — so any
+claim can be traced to the text it came from.
 
-![A cited answer with its source passages](docs/home.png)
+![A cited answer with its source passage](docs/answer.jpg)
+
+The interface ships in two themes. Dark is not an inversion of light: the oxblood accent
+loses its chroma at low luminance, so it warms to ember instead.
+
+![The same view in dark mode](docs/answer-dark.jpg)
 
 ## Engineering highlights
 
