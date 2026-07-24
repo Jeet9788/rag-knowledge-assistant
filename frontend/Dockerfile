@@ -1,8 +1,12 @@
 # ---- deps ----
 FROM node:20-alpine AS deps
 WORKDIR /app
-COPY package.json ./
-RUN npm install
+# Copy the lockfile too and install from it. Without the lock, `npm install`
+# re-resolves every caret range at image-build time, so the deployed bundle can
+# differ from the one built locally — which is exactly how a route collision
+# reached production while local builds looked clean.
+COPY package.json package-lock.json ./
+RUN npm ci
 
 # ---- builder ----
 FROM node:20-alpine AS builder

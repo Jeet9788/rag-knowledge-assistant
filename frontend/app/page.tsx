@@ -63,7 +63,7 @@ export default function LandingPage() {
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-6">
             <Link
-              href="/app"
+              href="/assistant"
               className="label px-7 py-3.5 transition-opacity hover:opacity-90"
               style={{
                 backgroundColor: "var(--accent)",
@@ -172,7 +172,7 @@ export default function LandingPage() {
 
       <footer className="mt-14 flex flex-wrap items-baseline justify-between gap-4 border-t-2 border-[var(--rule-strong)] pt-5 pb-10">
         <span className="label">Built by Jeet Patel</span>
-        <Link href="/app" className="label transition-colors hover:text-accent">
+        <Link href="/assistant" className="label transition-colors hover:text-accent">
           Open the reading room →
         </Link>
       </footer>

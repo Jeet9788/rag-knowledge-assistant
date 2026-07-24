@@ -2,5 +2,8 @@ node_modules
 .next
 out
 npm-debug.log
+# Every env file: NEXT_PUBLIC_* values are inlined at build time, so a stray
+# .env.local would be baked into the image and ship the wrong API URL.
 .env
+.env.*
 .git
